@@ -1,0 +1,11 @@
+azure-ai-agents
+azure-identity
+azure-ai-projects
+aiohttp
+FastAPI
+uvicorn
+pydantic
+python-dotenv
+PyYAML
+azure-monitor-opentelemetry
+opentelemetry-instrumentation-openai-v2

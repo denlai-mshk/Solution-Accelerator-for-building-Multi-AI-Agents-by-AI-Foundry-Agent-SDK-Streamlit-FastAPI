@@ -1,0 +1,15 @@
+agents:
+  - name: TimeWeatherAgent
+    instructions: "You are a specialized agent for time and weather queries."
+    user_functions: [fetch_current_datetime, fetch_weather]
+    can_delegate: true
+
+  - name: SendEmailAgent
+    instructions: "You are a specialized agent for sending emails."
+    user_functions: [send_email_using_recipient_name]
+    can_delegate: false
+
+  - name: TemperatureAgent
+    instructions: "You are a specialized agent for temperature conversion."
+    user_functions: [convert_temperature]
+    can_delegate: false

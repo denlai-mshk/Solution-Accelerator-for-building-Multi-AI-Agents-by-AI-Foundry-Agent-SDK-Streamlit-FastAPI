@@ -1,0 +1,20 @@
+{
+    "agents": {
+        "TeamLeader": {
+            "id": "asst_OhU5dB6sEwGL7zreAxG7g7gt",
+            "role": "leader"
+        },
+        "TimeWeatherAgent": {
+            "id": "asst_kJTsKK4CfHijJ86Ud81upcTj",
+            "role": "member"
+        },
+        "SendEmailAgent": {
+            "id": "asst_h8YOfTHdnrMKi5XbTUF8eQuU",
+            "role": "member"
+        },
+        "TemperatureAgent": {
+            "id": "asst_0RJSJGIMna7u4DIrwPgyYjhN",
+            "role": "member"
+        }
+    }
+}
