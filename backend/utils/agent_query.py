@@ -25,7 +25,6 @@ function_name_to_func = {
 }
 
 
-
 async def query_agents(user_request: str, project_client) -> tuple[str, str]:
     if not project_client:
         return "Error: AIProjectClient is not initialized.", ""
@@ -48,21 +47,33 @@ async def query_agents(user_request: str, project_client) -> tuple[str, str]:
     # Setup tracing
     AgentTraceConfigurator(agents_client=agents_client).setup_tracing(1)
 
-    agent_team = AgentTeam(os.getenv("AGENT_TEAM_NAME"), agents_client=agents_client)
+    team_name = os.getenv("AGENT_TEAM_NAME")
+    if not team_name:
+        return "Error: Environment variable AGENT_TEAM_NAME is not set.", ""
+
+    # Try to get an existing AgentTeam, else create one
+    try:
+        agent_team = AgentTeam.get_team(team_name)
+    except ValueError:
+        try:
+            agent_team = AgentTeam(team_name, agents_client=agents_client)
+        except ValueError as ve:
+            return f"Error: {ve}", ""
+
     agent_ids_file = agent_team._agent_ids_file
 
     if not agent_ids_file or not os.path.exists(agent_ids_file):
-        return "please run /agent_setup before asking question", ""
+        return "Please run /agent_setup before asking a question.", ""
 
     try:
         with open(agent_ids_file, "r", encoding="utf-8") as f:
             data = json.load(f)
         agents_data = data.get("agents", {})
     except (json.JSONDecodeError, IOError) as e:
-        return f"Warning: Failed to read or parse JSON file '{agent_ids_file}': {e}\nplease run /agent_setup before asking question", ""
+        return f"Warning: Failed to read or parse JSON file '{agent_ids_file}': {e}\nPlease run /agent_setup before asking a question.", ""
 
     if not agents_data:
-        return "please run /agent_setup before asking question", ""
+        return "Please run /agent_setup before asking a question.", ""
 
     # Load and verify agents exist by asynchronously calling get_agent
     agents_loaded = False
@@ -75,7 +86,7 @@ async def query_agents(user_request: str, project_client) -> tuple[str, str]:
                 agents_loaded = True
 
     if not agents_loaded:
-        return "please run /agent_setup before asking question", ""
+        return "Please run /agent_setup before asking a question.", ""
 
     # Process the user request and get response and thread ID
     response, thread_id = await agent_team.process_request_threadid(request=user_request)
