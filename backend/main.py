@@ -128,7 +128,7 @@ async def chat_endpoint(chat_req: ChatRequest):
 @app.post("/agentteam")
 async def agentteam_endpoint(chat_req: ChatRequest):
     # Call query_agents with the user question
-    response, thread_id = await query_agents(chat_req.message, project_client)
+    response, thread_id = await query_agents(chat_req.message, chat_req.thread_id, project_client)
     return {"response": response, "thread_id": thread_id}
 
 @app.get("/agentsetup")

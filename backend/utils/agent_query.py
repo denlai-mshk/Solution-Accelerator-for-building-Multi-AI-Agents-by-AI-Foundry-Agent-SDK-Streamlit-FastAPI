@@ -24,8 +24,7 @@ function_name_to_func = {
     "convert_temperature": convert_temperature,
 }
 
-
-async def query_agents(user_request: str, project_client) -> tuple[str, str]:
+async def query_agents(user_request: str, thread_id: str, project_client) -> tuple[str, str]:
     if not project_client:
         return "Error: AIProjectClient is not initialized.", ""
 
@@ -89,8 +88,10 @@ async def query_agents(user_request: str, project_client) -> tuple[str, str]:
         return "Please run /agent_setup before asking a question.", ""
 
     # Process the user request and get response and thread ID
-    response, thread_id = await agent_team.process_request_threadid(request=user_request)
+    response, thread_id = await agent_team.process_request_threadid(request=user_request, thread_id=thread_id)
     return response, thread_id
+
+
 
 
 # Standalone async test runner
