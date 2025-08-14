@@ -358,12 +358,13 @@ class AgentTeam:
         attributes["agent_team.task.result"] = result
         span.add_event(name=f"agent_team.task_completed", attributes=attributes)
 
-    async def process_request_threadid(self, request: str) -> tuple[str, str]:
+    async def process_request_threadid(self, request: str, thread_id: Optional[str] = None) -> tuple[str, str]:
         """
         Handle a user's request by creating a team and delegating tasks to
         the team leader. The team leader may generate additional tasks.
 
         :param request: The user's request or question.
+        :param thread_id: Optional thread ID; if provided and not empty, reuse existing thread.
         :return: A tuple containing the last outcome from the agent team as a string,
                 and the thread ID as a string.
         """
@@ -372,7 +373,17 @@ class AgentTeam:
 
         last_outcome = ""  # Initialize last outcome variable
 
-        if self._agent_thread is None:
+        # Use existing thread if thread_id given and valid; else create new thread
+        if thread_id is not None and thread_id.strip() != "":
+            try:
+                self._agent_thread = await self._agents_client.threads.get(thread_id)
+                print(f"Using existing thread with ID: {self._agent_thread.id}")
+            except Exception as e:
+                print(f"Failed to get thread with ID '{thread_id}': {e}")
+                # fallback to creating new thread
+                self._agent_thread = await self._agents_client.threads.create()
+                print(f"Created new thread with ID: {self._agent_thread.id}")
+        else:
             self._agent_thread = await self._agents_client.threads.create()
             print(f"Created thread with ID: {self._agent_thread.id}")
 
@@ -434,6 +445,7 @@ class AgentTeam:
             self._current_request_span = None
 
         return last_outcome, self._agent_thread.id
+
 
     async def process_request(self, request: str) -> None:
         """
