@@ -358,95 +358,93 @@ class AgentTeam:
         attributes["agent_team.task.result"] = result
         span.add_event(name=f"agent_team.task_completed", attributes=attributes)
 
-async def process_request_threadid(self, request: str, thread_id: str | None = None) -> tuple[str, str]:
-    """
-    Handle a user's request by creating a team and delegating tasks to
-    the team leader. The team leader may generate additional tasks.
+    async def process_request_threadid(self, request: str, thread_id: Optional[str] = None) -> tuple[str, str]:
+        """
+        Handle a user's request by creating a team and delegating tasks to
+        the team leader. The team leader may generate additional tasks.
 
-    :param request: The user's request or question.
-    :param thread_id: Optional thread ID to use an existing thread instead of creating a new one.
-    :return: A tuple containing the last outcome from the agent team as a string,
-             and the thread ID as a string.
-    """
-    assert self._agents_client is not None, "project client must not be None"
-    assert self._team_leader is not None, "team leader must not be None"
+        :param request: The user's request or question.
+        :param thread_id: Optional thread ID; if provided and not empty, reuse existing thread.
+        :return: A tuple containing the last outcome from the agent team as a string,
+                and the thread ID as a string.
+        """
+        assert self._agents_client is not None, "project client must not be None"
+        assert self._team_leader is not None, "team leader must not be None"
 
-    last_outcome = ""  # Initialize last outcome variable
+        last_outcome = ""  # Initialize last outcome variable
 
-    if thread_id is not None:
-        try:
-            # Try to fetch the existing thread by thread_id
-            self._agent_thread = await self._agents_client.threads.get(thread_id)
-            print(f"Using existing thread with ID: {self._agent_thread.id}")
-        except Exception as e:
-            # If any error occurs, log and create a new thread instead
-            print(f"Failed to fetch thread with ID {thread_id}: {e}. Creating a new thread.")
-            self._agent_thread = await self._agents_client.threads.create()
-            print(f"Created new thread with ID: {self._agent_thread.id}")
-    else:
-        # Create a new thread only if we don't already have one
-        if self._agent_thread is None:
+        # Use existing thread if thread_id given and valid; else create new thread
+        if thread_id is not None and thread_id.strip() != "":
+            try:
+                self._agent_thread = await self._agents_client.threads.get(thread_id)
+                print(f"Using existing thread with ID: {self._agent_thread.id}")
+            except Exception as e:
+                print(f"Failed to get thread with ID '{thread_id}': {e}")
+                # fallback to creating new thread
+                self._agent_thread = await self._agents_client.threads.create()
+                print(f"Created new thread with ID: {self._agent_thread.id}")
+        else:
             self._agent_thread = await self._agents_client.threads.create()
             print(f"Created thread with ID: {self._agent_thread.id}")
 
-    with tracer.start_as_current_span("agent_team_request") as current_request_span:
-        self._current_request_span = current_request_span
-        if self._current_request_span is not None:
-            self._current_request_span.set_attribute("agent_team.name", self.team_name)
-        team_leader_request = self.TEAM_LEADER_INITIAL_REQUEST.format(original_request=request)
-        _create_task(
-            team_name=self.team_name,
-            recipient=self._team_leader.name,
-            request=team_leader_request,
-            requestor="user",
-        )
-        while self._tasks:
-            task = self._tasks.pop(0)
-            with tracer.start_as_current_span("agent_team_task") as current_task_span:
-                self._current_task_span = current_task_span
-                if self._current_task_span is not None:
-                    self._current_task_span.set_attribute("agent_team.name", self.team_name)
-                    self._current_task_span.set_attribute("agent_team.task.recipient", task.recipient)
-                    self._current_task_span.set_attribute("agent_team.task.requestor", task.requestor)
-                    self._current_task_span.set_attribute("agent_team.task.description", task.task_description)
-                print(
-                    f"Starting task for agent '{task.recipient}'. "
-                    f"Requestor: '{task.requestor}'. "
-                    f"Task description: '{task.task_description}'."
-                )
-                message = await self._agents_client.messages.create(
-                    thread_id=self._agent_thread.id,
-                    role="user",
-                    content=task.task_description,
-                )
-                print(f"Created message with ID: {message.id} for task in thread {self._agent_thread.id}")
-                agent = self._get_member_by_name(task.recipient)
-                if agent and agent.agent_instance:
-                    run = await self._agents_client.runs.create_and_process(
-                        thread_id=self._agent_thread.id, agent_id=agent.agent_instance.id
+        with tracer.start_as_current_span("agent_team_request") as current_request_span:
+            self._current_request_span = current_request_span
+            if self._current_request_span is not None:
+                self._current_request_span.set_attribute("agent_team.name", self.team_name)
+            team_leader_request = self.TEAM_LEADER_INITIAL_REQUEST.format(original_request=request)
+            _create_task(
+                team_name=self.team_name,
+                recipient=self._team_leader.name,
+                request=team_leader_request,
+                requestor="user",
+            )
+            while self._tasks:
+                task = self._tasks.pop(0)
+                with tracer.start_as_current_span("agent_team_task") as current_task_span:
+                    self._current_task_span = current_task_span
+                    if self._current_task_span is not None:
+                        self._current_task_span.set_attribute("agent_team.name", self.team_name)
+                        self._current_task_span.set_attribute("agent_team.task.recipient", task.recipient)
+                        self._current_task_span.set_attribute("agent_team.task.requestor", task.requestor)
+                        self._current_task_span.set_attribute("agent_team.task.description", task.task_description)
+                    print(
+                        f"Starting task for agent '{task.recipient}'. "
+                        f"Requestor: '{task.requestor}'. "
+                        f"Task description: '{task.task_description}'."
                     )
-                    print(f"Created and processed run for agent '{agent.name}', run ID: {run.id}")
-                    text_message = await self._agents_client.messages.get_last_message_text_by_role(
-                        thread_id=self._agent_thread.id, role=MessageRole.AGENT
+                    message = await self._agents_client.messages.create(
+                        thread_id=self._agent_thread.id,
+                        role="user",
+                        content=task.task_description,
                     )
-                    if text_message and text_message.text:
-                        print(f"Agent '{agent.name}' completed task. Outcome: {text_message.text.value}")
-                        last_outcome = text_message.text.value  # Capture last outcome here
-                        if self._current_task_span is not None:
-                            self._add_task_completion_event(self._current_task_span, result=text_message.text.value)
+                    print(f"Created message with ID: {message.id} for task in thread {self._agent_thread.id}")
+                    agent = self._get_member_by_name(task.recipient)
+                    if agent and agent.agent_instance:
+                        run = await self._agents_client.runs.create_and_process(
+                            thread_id=self._agent_thread.id, agent_id=agent.agent_instance.id
+                        )
+                        print(f"Created and processed run for agent '{agent.name}', run ID: {run.id}")
+                        text_message = await self._agents_client.messages.get_last_message_text_by_role(
+                            thread_id=self._agent_thread.id, role=MessageRole.AGENT
+                        )
+                        if text_message and text_message.text:
+                            print(f"Agent '{agent.name}' completed task. Outcome: {text_message.text.value}")
+                            last_outcome = text_message.text.value  # Capture last outcome here
+                            if self._current_task_span is not None:
+                                self._add_task_completion_event(self._current_task_span, result=text_message.text.value)
 
-                if not self._tasks and not task.recipient == "TeamLeader":
-                    team_leader_request = self.TEAM_LEADER_TASK_COMPLETENESS_CHECK_INSTRUCTIONS
-                    _create_task(
-                        team_name=self.team_name,
-                        recipient=self._team_leader.name,
-                        request=team_leader_request,
-                        requestor="user",
-                    )
-                self._current_task_span = None
-        self._current_request_span = None
+                    if not self._tasks and not task.recipient == "TeamLeader":
+                        team_leader_request = self.TEAM_LEADER_TASK_COMPLETENESS_CHECK_INSTRUCTIONS
+                        _create_task(
+                            team_name=self.team_name,
+                            recipient=self._team_leader.name,
+                            request=team_leader_request,
+                            requestor="user",
+                        )
+                    self._current_task_span = None
+            self._current_request_span = None
 
-    return last_outcome, self._agent_thread.id
+        return last_outcome, self._agent_thread.id
 
 
     async def process_request(self, request: str) -> None:
