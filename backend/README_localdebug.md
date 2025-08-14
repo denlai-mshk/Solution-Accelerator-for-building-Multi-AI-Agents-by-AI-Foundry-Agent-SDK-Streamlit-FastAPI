@@ -10,6 +10,10 @@ AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED=true
 AGENT_TEAM_NAME=xxxxxxxxxxx
 APPLICATIONINSIGHTS_CONNECTION_STRING=xxxxxxxxxxxxxxxxxx
 ```
+For collecting the **APPLICATIONINSIGHTS_CONNECTION_STRING**. You have to setup Log Analytic Workspace and Application Insight to your AI Foundry resource. And then you come back to AI Foundry workspace, locate your project, Left menu **Tracing / Monitoring**, set the data source to your Application Insight. Then you will have the InstrumentationKey for that connection string.
+
+Leave the **ENTRY_AGENT_ID** be empty at this moment. You will have this agent id on step 9
+
 ### Step 2: open terminal (command prompt)
 ### Step 3:  cd backend
 ### Step 4 (run once at 1st time): \backend> python -m venv venv
@@ -21,7 +25,7 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=xxxxxxxxxxxxxxxxxx
 ```
 curl http://localhost:8000/agentsetup
 ```
-Check the TeamLeader agent id from **\config\MULTIAGENT-DEMO_agent_ids.json** and fill this agent id in **.env**
+Check the **TeamLeader** agent id from **\config\MULTIAGENT-DEMO_agent_ids.json** and fill this agent id in **.env**
 
 ENTRY_AGENT_ID=asst_xxxxxxxxxxxxxxxxxxxxxxxx
 

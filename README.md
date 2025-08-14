@@ -77,6 +77,13 @@ Two common agent communication patterns are included as examples:
 - **Handoff:** A unidirectional workflow where the team leader passes tasks to team members sequentially.
 - **Supervisor:** A bidirectional conversation pattern where the team leader reviews and asserts if the agents' combined outputs fulfill the user’s request by checking task completeness
 
+## How to use this Repo?
+
+Clone this repo and follow these two readme for your local testing. You need to have an existing AI Foundry workspace, AI Foundry resource and AI Foundry project as well as AI user permission.
+
+[Setup Frontend](/frontend/README.md)
+
+[Setup Backend](/backend/README.md)
 
 ## References
 [azure-sdk-for-python sample](https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/ai/azure-ai-agents/samples/agents_multiagent/sample_agents_multi_agent_team.py)

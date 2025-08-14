@@ -1,5 +1,5 @@
 # Local host for testing
-
+### Step 0: [Install Latest Microsoft Visual C++ Redistributable version ](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)
 ### Step 1: Fill Environmental Variables in .env
 ```
 SPEECH_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
